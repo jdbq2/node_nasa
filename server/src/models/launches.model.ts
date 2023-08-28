@@ -6,7 +6,7 @@ let latestFlightNumber: number = 100;
 
 const launch = {
     customers: ["NASA", "ZTM"],
-    destination: "Kepler-442 b",
+    target: "Kepler-442 b",
     flightNumber: 100,
     launchDate: new Date("December 27, 2030"),
     mission: "Exploration X",
@@ -30,6 +30,19 @@ export function addNewLaunch(launch: Launch) {
             upcoming: true,
         })
     );
+}
+
+export function launchExist(id: string) {
+    return launches.has(Number(id));
+}
+
+export function deleteLaunch(id: string) {
+    const aborted = launches.get(Number(id));
+    if (aborted) {
+        aborted.upcoming = false;
+        aborted.success = false;
+    }
+    return aborted;
 }
 
 launches.set(launch.flightNumber, launch);
