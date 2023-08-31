@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "npx nodemon",
+    "dev": "docker compose up -d && npx nodemon",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && pm2 start build/index.js -i max",
     "test": "jest"
