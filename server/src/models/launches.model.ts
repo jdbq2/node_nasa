@@ -1,8 +1,6 @@
 import { Launch } from "../interfaces/Launch";
-
-export const launches = new Map<number, Launch>();
-
-let latestFlightNumber: number = 100;
+import { launchModel } from "./launch.mongo";
+import { planetModel } from "./planet.mongo";
 
 const launch = {
     customers: ["NASA", "ZTM"],
@@ -15,34 +13,67 @@ const launch = {
     upcoming: true,
 };
 
-export function getAllLaunches() {
-    return Array.from(launches.values());
-}
-
-export function addNewLaunch(launch: Launch) {
-    latestFlightNumber++;
-    launches.set(
-        latestFlightNumber,
-        Object.assign(launch, {
-            flightNumber: latestFlightNumber,
-            customers: ["NASA", "ZTM"],
-            success: true,
-            upcoming: true,
-        })
-    );
-}
-
-export function launchExist(id: string) {
-    return launches.has(Number(id));
-}
-
-export function deleteLaunch(id: string) {
-    const aborted = launches.get(Number(id));
-    if (aborted) {
-        aborted.upcoming = false;
-        aborted.success = false;
+export async function getAllLaunches() {
+    try {
+        return launchModel.find({}, { _id: 0, __v: 0 });
+    } catch (error) {
+        console.log(error);
     }
-    return aborted;
 }
 
-launches.set(launch.flightNumber, launch);
+export async function saveLaunch(launch: Launch) {
+    try {
+        const planetTarget = await planetModel.findOne({
+            kepler_name: launch.target,
+        });
+        if (!planetTarget) {
+            throw new Error("No Match target planet");
+        }
+        await launchModel.findOneAndUpdate(
+            {
+                flightNumber: launch.flightNumber,
+            },
+            launch,
+            { upsert: true }
+        );
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+export async function scheduleNewLaunch(launch: Launch) {
+    const latestFlightNumber = (await getLatestFlightNumber()) + 1;
+    const newLaunch = Object.assign(launch, {
+        flightNumber: latestFlightNumber,
+        customers: ["NASA", "ZTM"],
+        success: true,
+        upcoming: true,
+    });
+    saveLaunch(newLaunch);
+}
+
+async function getLatestFlightNumber() {
+    const latestLaunch = await launchModel.findOne().sort("-flightNumber");
+    if (!latestLaunch) {
+        return 100;
+    }
+    return latestLaunch?.flightNumber;
+}
+
+export async function launchExist(id: string) {
+    return launchModel.findOne({ flightNumber: id });
+}
+
+export async function deleteLaunch(id: string) {
+    const aborted = await launchModel.updateOne(
+        { flightNumber: id },
+        {
+            upcoming: false,
+            success: false,
+        }
+    );
+
+    return aborted.acknowledged;
+}
+
+saveLaunch(launch);

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import { habitablePlanets } from "../models/planets.model";
+import { getHabitablePlanets } from "../models/planets.model";
 
-export function getAllPlanets(req: Request, res: Response) {
-    res.status(200).json(habitablePlanets);
+export async function getAllPlanets(req: Request, res: Response) {
+    const planets = await getHabitablePlanets();
+    res.status(200).json(planets);
 }

@@ -7,7 +7,7 @@
     "dev": "docker compose up -d && npx nodemon",
     "build": "rimraf ./build && tsc",
     "start": "npm run build && pm2 start build/index.js -i max",
-    "test": "jest"
+    "test": "jest --detectOpenHandles"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +32,7 @@
     "csv-parse": "^5.4.0",
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
+    "mongoose": "^7.5.0",
     "morgan": "^1.10.0"
   },
   "jest": {
@@ -41,7 +42,7 @@
     "coveragePathIgnorePatterns": [
       "/node_modules/",
       "/test/",
-      "/dist/"
+      "/build/"
     ]
   }
 }
