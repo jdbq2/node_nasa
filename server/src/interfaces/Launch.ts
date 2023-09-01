@@ -1,6 +1,6 @@
 export interface Launch {
     customers: string[];
-    target: string;
+    target?: string;
     flightNumber: number;
     launchDate: Date;
     mission: string;

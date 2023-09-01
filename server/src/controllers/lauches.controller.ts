@@ -7,7 +7,11 @@ import {
 } from "../models/launches.model";
 
 export async function getLauches(req: Request, res: Response) {
-    const data = await getAllLaunches();
+    const queryParams = req.query;
+    const limit = Math.abs(Number(queryParams.limit)) || 0;
+    const page = Math.abs(Number(queryParams.page)) || 1;
+
+    const data = await getAllLaunches(limit, page);
     return res.status(200).json(data);
 }
 

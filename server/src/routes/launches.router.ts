@@ -14,7 +14,6 @@ launchesRouter.get("/", getLauches);
 launchesRouter.post(
     "/",
     [
-        check("target", "Target field is mandatory").notEmpty(),
         check("rocket", "rocket field is mandatory").notEmpty(),
         check("mission", "mission field is mandatory").notEmpty(),
         check("launchDate").custom(isCorrectDateFormat),

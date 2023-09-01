@@ -1,21 +1,76 @@
+import axios from "axios";
 import { Launch } from "../interfaces/Launch";
 import { launchModel } from "./launch.mongo";
-import { planetModel } from "./planet.mongo";
 
-const launch = {
-    customers: ["NASA", "ZTM"],
-    target: "Kepler-442 b",
-    flightNumber: 100,
-    launchDate: new Date("December 27, 2030"),
-    mission: "Exploration X",
-    rocket: "Explore IS1",
-    success: true,
-    upcoming: true,
-};
+export async function loadLaunchesData() {
+    const firstLaunch = await findLaunch({
+        flightNumber: 1,
+        rocket: "Falcon 1",
+        mission: "FalconSat",
+    });
 
-export async function getAllLaunches() {
+    if (firstLaunch) {
+        console.log("Data already loaded");
+        return;
+    }
+
+    console.log("Downloading Launch Data...");
+
+    const { data } = await axios.post(
+        "https://api.spacexdata.com/v4/launches/query",
+        {
+            query: {},
+            options: {
+                pagination: false,
+                populate: [
+                    {
+                        path: "rocket",
+                        select: {
+                            name: 1,
+                        },
+                    },
+                    {
+                        path: "payloads",
+                        select: {
+                            customers: 1,
+                        },
+                    },
+                ],
+            },
+        }
+    );
+    const launchDocs = data.docs;
+    for (const launchDoc of launchDocs) {
+        const payloads: [] = launchDoc["payloads"];
+        const customers: string[] = payloads.flatMap(
+            (payload: { customers: string }) => payload["customers"]
+        );
+        const launch = {
+            flightNumber: launchDoc["flight_number"],
+            launchDate: launchDoc["date_local"],
+            mission: launchDoc["name"],
+            rocket: launchDoc["rocket"]["name"],
+            success: launchDoc["success"],
+            upcoming: launchDoc["upcoming"],
+            customers: customers,
+        };
+
+        await saveLaunch(launch);
+    }
+}
+
+async function findLaunch(filter: any): Promise<boolean> {
+    return !!(await launchModel.findOne(filter));
+}
+
+export async function getAllLaunches(limit: number, page: number) {
+    const skip = limit * (page - 1);
     try {
-        return launchModel.find({}, { _id: 0, __v: 0 });
+        return launchModel
+            .find({}, { _id: 0, __v: 0 })
+            .sort({ flightNumber: "ascending" })
+            .skip(skip)
+            .limit(limit);
     } catch (error) {
         console.log(error);
     }
@@ -23,12 +78,6 @@ export async function getAllLaunches() {
 
 export async function saveLaunch(launch: Launch) {
     try {
-        const planetTarget = await planetModel.findOne({
-            kepler_name: launch.target,
-        });
-        if (!planetTarget) {
-            throw new Error("No Match target planet");
-        }
         await launchModel.findOneAndUpdate(
             {
                 flightNumber: launch.flightNumber,
@@ -75,5 +124,3 @@ export async function deleteLaunch(id: string) {
 
     return aborted.acknowledged;
 }
-
-saveLaunch(launch);
